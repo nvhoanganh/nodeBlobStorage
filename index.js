@@ -1,14 +1,13 @@
 const { BlobServiceClient } = require("@azure/storage-blob");
+let fs = require('fs');
 
-const folderId = '05026d75-ec5c-40cd-b3b0-366a8ce7a4e8';
-
-const token = ``;
-
-const token2 = token.replace(folderId, '');
-const blobServiceClient = new BlobServiceClient(token2);
+const _token = ``;
 
 
-async function main() {
+async function main(token) {
+  const folderId = '';
+  const token2 = token.replace(folderId, '');
+  const blobServiceClient = new BlobServiceClient(token2);
   console.time();
   const containerClient = blobServiceClient.getContainerClient(folderId);
 
@@ -24,16 +23,40 @@ async function main() {
   console.timeEnd();
 }
 
-async function main2() {
+// uploading using REST API and fetch
+async function main3(token) {
+  // via REST API, upload a simple text
   console.time();
-  const containerClient = blobServiceClient.getContainerClient(folderId);
 
-  const content = "Hello world!";
-  const blobName = "newblob" + new Date().getTime();
+  const fileName = 'IMG_0002.JPG';
+  const filePath = `/Users/anthonynguyen/sources/personal/nodeBlobStorage/IMG_0002.JPG`;
 
-  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
-  const uploadBlobResponse = await blockBlobClient.upload(content, content.length);
-  console.log(`Upload block blob ${blobName} successfully`, uploadBlobResponse.requestId);
+  const stats = fs.statSync(filePath);
+  const fileSizeInBytes = stats.size;
+
+  console.log(`file lenght is ${fileSizeInBytes} bytes`);
+
+  const URL = token.split('?')[0] + `/${fileName}?` + token.split('?')[1];
+
+  console.log(`upload URL is: ${URL}`);
+
+  let readStream = fs.createReadStream(filePath);
+
+  console.time();
+  console.log('uploading..');
+  await fetch(URL, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'image/jpeg',
+      'x-ms-version': '2023-11-03',
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-length': fileSizeInBytes
+    },
+    body: readStream,
+    duplex: 'half'
+  })
+  console.timeEnd();
+  console.log('done');
 }
 
-main2();
+main3(_token);
